@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Load Screenshot</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+<body>
+<div class="main">
+	<h1>Load Screenshot from json file</h1>
+</div>
+<div class="screenshot"></div>
+
+<script type="text/javascript">
+	$(document).ready(function(){
+		$.getJSON("data.json", function(json) {
+	    //console.log(json); // this will show the info it in firebug console
+
+	    for (var i = 0; i  < json.length; i++) {
+	    	$('.screenshot').append('<img src="'+json[i].imageURL+'"/>');
+	    }
+		});
+	});
+</script>
+</body>
+</html>
