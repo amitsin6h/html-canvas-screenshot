@@ -1,25 +1,130 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Load Screenshot</title>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-</head>
-<body>
-<div class="main">
-	<h1>Load Screenshot from json file</h1>
-</div>
-<div class="screenshot"></div>
+<?php
+	function dbconnect(){
+		$conn=mysqli_connect('localhost','root','','users');
+		return $conn;
+	}
+	function dbdisconnect($dbobj){
+		mysqli_close($dbobj);
+	}
+?>
 
-<script type="text/javascript">
-	$(document).ready(function(){
-		$.getJSON("data.json", function(json) {
-	    //console.log(json); // this will show the info it in firebug console
+<?php
+class users{
+		public	function addUser($params,$dbobj){
+			$insert_query="insert into student_details(name,email,mobile,gender) values('$params[name]','$params[email]','$params[mobile]','$params[gender]')";
+		$result=mysqli_query($dbobj,$insert_query);
+			
+			if(!$result){
+				return false;
+			}
+			else{
+				return true;
+			}
+		}
 
-	    for (var i = 0; i  < json.length; i++) {
-	    	$('.screenshot').append('<img src="'+json[i].imageURL+'"/>');
-	    }
-		});
-	});
-</script>
-</body>
-</html>
+		public	function getUser($dbobj){
+			$dataArr = [];
+			$select_query="select * from student_details";
+	 		$query=mysqli_query($dbobj,$select_query);
+	 		while ($row=mysqli_fetch_assoc($query)) {
+				$dataArr[] = $row;
+			}
+			return $dataArr;
+		}
+
+		public function getUserById($userid,$dbobj){
+			$dataArr = [];
+			$selectSql="SELECT id as user_id,name,email,mobile,gender FROM student_details WHERE id='$userid'";
+	 		$query=mysqli_query($dbobj,$selectSql);
+	 		while ($row=mysqli_fetch_assoc($query)) {
+				$dataArr = $row;
+			}
+			return $dataArr;
+		}
+
+		public	function updateUser($params,$id,$dbobj){	
+		$update_query="UPDATE student_details SET name= '$params[name]',email= '$params[email]',mobile= '$params[mobile]',gender='$params[gender]' WHERE id ='$id'";
+		$result=mysqli_query($dbobj,$update_query);
+		return $result;
+		}
+
+		public	function deleteUser($uid,$dbobj){
+			$delet_query="DELETE FROM student_details WHERE id='$uid'";
+				$result=mysqli_query($dbobj,$delet_query);
+				return $result;
+		}
+}
+
+?>
+<?php
+require_once("config/db.php");
+require_once("lib/registration.class.php");
+
+$dbconnobj=dbconnect();
+$userobj=new users();
+
+$json=file_get_contents('php://input');
+$data=json_decode($json,true);
+
+$method=$_REQUEST["method"];
+
+if (empty($method)){
+	echo json_encode(["status"=>"false","Message"=>"Invalid arguments"]);
+}
+
+else if ($method =="add" && $_SERVER["REQUEST_METHOD"]=="POST") {
+	
+	$result=$userobj->addUser($data,$dbconnobj);
+	
+	if($result){
+		echo json_encode(["status"=>"True","Message"=>"Inserted successfully"]);
+	}
+	else{
+		echo json_encode(["status"=>"false","Message"=>"Not inserted"]);
+	}
+}
+
+else if($method == "get" && $_SERVER["REQUEST_METHOD"]== "GET"){
+
+	$data = $userobj->getUser($dbconnobj);
+	echo json_encode(["status"=>true,"data"=>$data]);
+}
+
+else if($method == "update" && $_SERVER["REQUEST_METHOD"]=="PUT"){
+	$id = $_GET["id"];
+	
+	
+	if(empty($id)){
+		echo json_encode(["status"=>false,"msg"=>"id missing"]);
+	}else{
+		$result = $userobj->updateUser($data,$id ,$dbconnobj);
+		if($result){
+			echo json_encode(["status"=>true,"msg"=>"updated"]);
+		}else{
+			echo json_encode(["status"=>false,"msg"=>"not updated"]);
+		}
+	}
+}
+
+else if($method == "delete" && $_SERVER["REQUEST_METHOD"]== "DELETE"){
+	$uid = $_GET["uid"];
+	if(empty($uid))
+	{
+		echo json_encode(["status"=>false,"Msg"=>"Id Missing"]);
+	}
+	else
+	{
+		$result=$userobj->deleteUser($uid,$dbconnobj);
+
+		if($result)
+		{
+			echo json_encode(["status"=>true,"Message"=>"Deleted Successfully"]);
+		}
+		else
+		{
+			echo json_encode(["status"=>false,"Message"=>"Not Deleted"]);
+		}
+	}
+}
+
+?>
